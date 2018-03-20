@@ -11,7 +11,7 @@ void* incrementer(void* pointer){
     volatile double* pCounter = p_counter_struct->pCounter;
     unsigned int nLoops = p_counter_struct->nLoops;
 
-    while ( *pCounter < nLoops ){
+    for (unsigned int i ; i < nLoops ; i++ ){
         *pCounter = *pCounter + 1.0;
     }
     return pointer;
