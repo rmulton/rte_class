@@ -5,12 +5,13 @@
 struct counterStruct { volatile double* pCounter; unsigned int nLoops; };
 
 /* Single increment function */
-void* incrementer(void* pointer){
+void* call_incr(void* pointer){
     // Get the counter
     counterStruct* p_counter_struct = (counterStruct*) pointer;
     volatile double* pCounter = p_counter_struct->pCounter;
     unsigned int nLoops = p_counter_struct->nLoops;
 
+    // Increment nLoops time the counter
     for (unsigned int i ; i < nLoops ; i++ ){
         *pCounter = *pCounter + 1.0;
     }
@@ -24,7 +25,7 @@ void incr(unsigned int nLoops, unsigned int nTasks, double* pCounter) {
     // Create the threads
     pthread_t incrementThreads [nTasks];
     for (unsigned int i = 0; i<nTasks ; i++){
-        pthread_create(&incrementThreads[i], NULL, incrementer, &counter_struct);
+        pthread_create(&incrementThreads[i], NULL, call_incr, &counter_struct);
     }
     // Wait for every thread to be done
     for (unsigned int i = 0; i<nTasks ; i++){
