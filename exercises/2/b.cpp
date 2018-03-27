@@ -6,7 +6,7 @@
 /* Threads*/
 
 /* Structure that contains everything a thread need to run */
-struct counterStruct { volatile double* pCounter; unsigned int nLoops; pthread_mutex_t mutex; };
+struct counterStruct { volatile double* pCounter; unsigned int nLoops; bool has_mutex; pthread_mutex_t mutex; };
 
 /* Single increment function */
 void* call_incr(void* pointer){
@@ -14,22 +14,27 @@ void* call_incr(void* pointer){
     counterStruct* p_counter_struct = (counterStruct*) pointer;
     volatile double* pCounter = p_counter_struct->pCounter;
     unsigned int nLoops = p_counter_struct->nLoops;
+    bool has_mutex = p_counter_struct->has_mutex;
 
     // Increment nLoops time the counter
     for (unsigned int i ; i < nLoops ; i++ ){
-        pthread_mutex_lock(&p_counter_struct->mutex);
+        if (has_mutex) {
+            pthread_mutex_lock(&p_counter_struct->mutex);
+        }
         *pCounter = *pCounter + 1.0;
-        pthread_mutex_unlock(&p_counter_struct->mutex);
+        if (has_mutex) {
+            pthread_mutex_unlock(&p_counter_struct->mutex);
+        }
     }
     return pointer;
 }
 
-counterStruct getCounterStruct(double* pCounter, unsigned int nLoops, bool mutex){
-    if (mutex==true){
+counterStruct getCounterStruct(double* pCounter, unsigned int nLoops, bool has_mutex){
+    if (has_mutex==true){
         std::cout << "Using a mutex" << std::endl;
         // Create the counter with a mutex
         pthread_mutex_t counterMutex;
-        counterStruct counter_struct = { pCounter, nLoops, counterMutex };
+        counterStruct counter_struct = { pCounter, nLoops, has_mutex, counterMutex };
         pthread_mutex_init(&counter_struct.mutex, NULL);
         return counter_struct;
     } else {
@@ -59,9 +64,7 @@ void incr(unsigned int nLoops, unsigned int nTasks, double* pCounter, bool mutex
         pthread_join(incrementThreads[i], NULL);
     }
     // Destroy the mutex
-    // if (mutex==true){
     destroyMutex(&counter_struct);
-    // }
     return;
 }
 
@@ -126,15 +129,15 @@ int main(int argc, char* argv[]) {
     // Get nTasks : convert argv[2] to an int
     int nTasks = getArgvInt(2, argv);
     // Get mutex : convert argv[3] to a string
-    bool mutex = getArgvBool(3, argv, argc, "mutex");
+    bool has_mutex = getArgvBool(3, argv, argc, "mutex");
     // Display the result
-    std::cout << "Received: nLoops=" << nLoops << ", nTasks=" << nTasks << ", mutex=" << mutex << std::endl;
+    std::cout << "Received: nLoops=" << nLoops << ", nTasks=" << nTasks << ", mutex=" << has_mutex << std::endl;
 
     // Create the counter
     double counter = 0.0;
 
     // Increment it with nTasks threads
-    incr(nLoops, nTasks, &counter, mutex);
+    incr(nLoops, nTasks, &counter, has_mutex);
 
     // Print its value
     // std::cout << "Counter has value: " << counter;
