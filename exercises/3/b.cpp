@@ -1,13 +1,24 @@
 #include <signal.h>
 #include <time.h>
 #include <iostream>
+#include <sstream>
+
+/* Helper function to get command line arguments as integers */
+int getArgvInt(int i, char* argv[]) {
+    int output;
+    std::istringstream iss(argv[i]);
+    iss >> output;
+    return output;
+}
 
 /* Timer */
 class Timer {
     // call_callback est static pour permettre d'être passée à l'API POSIX
     private:
         timer_t tid;
-        static void call_callback(int sig, siginfo_t* si, void* user);
+	int counter;
+        static void call_callback(int sig, siginfo_t* si, void*);
+	void increment();
     protected:
         virtual void callback() = 0; // virtual permet d'appeler les méthodes des classes héritées, 0 empêche la classe mère de l'appeler 
     public:
@@ -15,6 +26,7 @@ class Timer {
         ~Timer();
         void start(double duration_ms);
         void stop();
+	int* getPCounter();
 };
 
 // Constructors
@@ -31,6 +43,9 @@ Timer::Timer(){
     sev.sigev_value.sival_ptr = this; // on passe l'objet ainsi
 
     timer_create(CLOCK_REALTIME, &sev, &tid);
+
+    // Initiate the counter
+    counter = 0;
 }
 
 // Destructor
@@ -56,13 +71,23 @@ void Timer::start(double duration_ms){
 void Timer::call_callback(int sig, siginfo_t* si, void*){
     Timer* timer = (Timer*) si->si_value.sival_ptr;
     timer->callback();
+    timer->increment();
     return;
+}
+
+void Timer::increment(){
+    counter++;
 }
 
 // Stopper
 void Timer::stop(){
     // TODO
     // timer_settime avec un its qui a sec = 0, nsec = 0
+}
+
+// Getter for the counter
+int* Timer::getPCounter(){
+    return &counter;
 }
 
 /* Test timer */
@@ -77,10 +102,23 @@ void TestTimer::callback(){
     return;
 }
 
-int main() {
-    std::cout << "Starting" << std::endl;
+int main(int argc, char* argv[]) {
+    // Get the input duration
+    if (argc!=2) {
+        std::cout << "Please enter the duration of the timer" << std::endl;
+        return -1;
+    }
+    int duration = getArgvInt(1, argv);
+    if (duration <= 0) {
+        std::cout << "Please enter a stricly positive duration" << std::endl;
+        return -1;
+    }
+    // Start the timer
+    std::cout << "Starting the timer for" << duration << " milliseconds" << std::endl;
     TestTimer timer; // on utilise new quand on veut mettre un objet dans la pile et le partager à travers le code
-    timer.start(0);
-    // Ajouter un while
+    timer.start(duration);
+    int* pcounter = timer.getPCounter();
+    // Wait for the timer to finish
+    while (*pcounter<1){}
     return 0;
 }
