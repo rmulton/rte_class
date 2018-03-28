@@ -103,9 +103,9 @@ void TestTimer::callback(){
 }
 
 int main(int argc, char* argv[]) {
-    // Get the input duration
-    if (argc!=2) {
-        std::cout << "Please enter the duration of the timer" << std::endl;
+    // Get the inputs
+    if (argc!=3) {
+        std::cout << "Please input <program_bin> <duration> <repetitions>" << std::endl;
         return -1;
     }
     int duration = getArgvInt(1, argv);
@@ -113,12 +113,18 @@ int main(int argc, char* argv[]) {
         std::cout << "Please enter a stricly positive duration" << std::endl;
         return -1;
     }
+    int repetitions = getArgvInt(2, argv);
+    if (repetitions <= 0) {
+        std::cout << "Please enter a stricly positive number of repetitions" << std::endl;
+        return -1;
+    }
     // Start the timer
-    std::cout << "Starting the timer for" << duration << " milliseconds" << std::endl;
+    std::cout << "Starting the timer for " << duration << " milliseconds" << std::endl;
     TestTimer timer; // on utilise new quand on veut mettre un objet dans la pile et le partager à travers le code
     timer.start(duration);
     int* pcounter = timer.getPCounter();
     // Wait for the timer to finish
-    while (*pcounter<1){}
+    while (*pcounter<repetitions){}
     return 0;
+
 }
